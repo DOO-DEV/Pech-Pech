@@ -6,5 +6,5 @@ import (
 )
 
 type UserRepository interface {
-	GetUserByIdOrUsername(ctx context.Context, idOrUsername string) (models.User, error)
+	GetUserByIdOrUsername(ctx context.Context, idOrUsername string) (*models.User, error)
 }

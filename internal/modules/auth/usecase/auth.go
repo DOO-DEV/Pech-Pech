@@ -25,19 +25,19 @@ type AuthClaims struct {
 	jwt.RegisteredClaims
 }
 
-type authService struct {
+type AuthService struct {
 	userRepo userRepo.UserRepository
 	authRepo authRepo.AuthRepository
 }
 
-func New(uRepo userRepo.UserRepository, autRepo authRepo.AuthRepository) authService {
-	return authService{
+func NewAuthService(uRepo userRepo.UserRepository, autRepo authRepo.AuthRepository) AuthService {
+	return AuthService{
 		userRepo: uRepo,
 		authRepo: autRepo,
 	}
 }
 
-func (a authService) Register(ctx context.Context, dto *presenter.RegisterRequest) (*presenter.RegisterResponse, error) {
+func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterRequest) (*presenter.RegisterResponse, error) {
 	fmtUsername := strings.ToLower(dto.Username)
 
 	if _, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); err != nil {
@@ -67,7 +67,7 @@ func (a authService) Register(ctx context.Context, dto *presenter.RegisterReques
 	}, nil
 }
 
-func (a authService) Login(ctx context.Context, dto *presenter.LoginRequest) (*presenter.LoginResponse, error) {
+func (a AuthService) Login(ctx context.Context, dto *presenter.LoginRequest) (*presenter.LoginResponse, error) {
 	user, err := a.userRepo.GetUserByIdOrUsername(ctx, dto.UsernameOrEmail)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (a authService) Login(ctx context.Context, dto *presenter.LoginRequest) (*p
 	return res, nil
 
 }
-func (a authService) createToken(userId string, username, email string) (string, error) {
+func (a AuthService) createToken(userId string, username, email string) (string, error) {
 	claims := &AuthClaims{
 		userID:   userId,
 		Email:    email,
@@ -112,7 +112,7 @@ func (a authService) createToken(userId string, username, email string) (string,
 
 	return tokenStr, nil
 }
-func (a authService) ParseToken(tokenStr string) (*AuthClaims, error) {
+func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(SigningKey), nil
 	})
@@ -127,7 +127,7 @@ func (a authService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	return nil, err
 }
 
-func (a authService) ForgetPassword() {}
-func (a authService) VerifyOtp()      {}
-func (a authService) ResetPassword()  {}
-func (a authService) UpdatePassword() {}
+func (a AuthService) ForgetPassword() {}
+func (a AuthService) VerifyOtp()      {}
+func (a AuthService) ResetPassword()  {}
+func (a AuthService) UpdatePassword() {}
