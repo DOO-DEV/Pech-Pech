@@ -17,16 +17,16 @@ func NewUserRepository(pgDB *gorm.DB) *userRepository {
 }
 
 func (a userRepository) GetUserByIdOrUsername(ctx context.Context, idOrUsername string) (*models.User, error) {
-	var user *models.User
+	user := &models.User{}
 
-	_, err := strconv.ParseUint(idOrUsername, 10, 64)
+	_, err := strconv.Atoi(idOrUsername)
 	if err != nil {
 		user.Username = idOrUsername
 	} else {
 		user.ID = idOrUsername
 	}
 
-	if err := a.pgDB.WithContext(ctx).Where(user).First(user).Error; err == nil {
+	if err := a.pgDB.WithContext(ctx).Where(user).First(user).Error; err != nil {
 		return nil, constants.ErrNoRecord
 	}
 

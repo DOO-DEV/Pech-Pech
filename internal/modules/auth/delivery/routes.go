@@ -6,7 +6,8 @@ import (
 )
 
 func SetRoutes(g *echo.Group, h AuthHandler, mw *middlewares.AuthMiddleware) {
-	g.Group("/auth")
-	g.POST("/register", h.Register)
-	g.POST("/login", h.Login)
+	authGroup := g.Group("/auth")
+
+	authGroup.POST("/register", h.Register)
+	authGroup.POST("/login", h.Login)
 }

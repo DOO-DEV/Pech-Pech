@@ -13,7 +13,7 @@ import (
 func Run() {
 	c := make(chan os.Signal, 1)
 
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGTERM, os.Interrupt, syscall.SIGHUP, syscall.SIGQUIT)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, syscall.SIGHUP, syscall.SIGQUIT)
 	signal.Notify(c, os.Kill)
 
 	adt := adaptor.NewAdapter()

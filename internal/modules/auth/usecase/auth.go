@@ -9,6 +9,7 @@ import (
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/helper"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"strings"
 	"time"
 )
@@ -45,12 +46,12 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 		// TODO - add log
 		return nil, constants.ErrUserExisted
 	}
-
 	hashedPassword, err := helper.Encrypt(dto.Password)
 	if err != nil {
 		return nil, err
 	}
 	user := &models.User{
+		ID:       uuid.New().String(),
 		Username: fmtUsername,
 		Email:    dto.Email,
 		Password: hashedPassword,
@@ -105,7 +106,7 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// TODO - add sign key and sign method to config
-	tokenStr, err := token.SignedString(SigningKey)
+	tokenStr, err := token.SignedString([]byte(SigningKey))
 	if err != nil {
 		return "", err
 	}

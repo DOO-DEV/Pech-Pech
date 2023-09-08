@@ -5,6 +5,7 @@ import (
 	"github.com/doo-dev/pech-pech/db/postgres"
 	"github.com/doo-dev/pech-pech/internal/server/api"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type IAdapter interface {
@@ -23,9 +24,12 @@ func NewAdapter() IAdapter {
 	pgInstance := pgAdaptor.ConnectInstance()
 
 	e := echo.New()
+	e.Use(middleware.Recover())
+	e.Use(middleware.Logger())
 
 	initServer := api.NewApi(e, pgInstance)
-	
+	initServer.Start(signal)
+
 	return Adapter{Api: initServer}
 }
 

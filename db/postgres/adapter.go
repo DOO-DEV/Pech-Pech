@@ -26,7 +26,7 @@ func (p Postgres) getInstance(uri string) *gorm.DB {
 
 func (p Postgres) ConnectInstance() *gorm.DB {
 	// TODO - config all these database connecting string
-	dsn := fmt.Sprintf("postgres://%s:%s@%s?sslmod", "doo-dev", "123456", "localhost")
+	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s", "doo-dev", "123456", "localhost", "online-chat")
 	db := p.getInstance(dsn)
 
 	return db

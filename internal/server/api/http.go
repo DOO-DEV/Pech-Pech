@@ -6,6 +6,8 @@ import (
 	authRepository "github.com/doo-dev/pech-pech/internal/modules/auth/repository"
 	authService "github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
 	userRepository "github.com/doo-dev/pech-pech/internal/modules/users/repository"
+	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 func (a Api) HttpApi() error {
@@ -19,7 +21,11 @@ func (a Api) HttpApi() error {
 	authMw := middlewares.NewAuthMiddleware(authSvc)
 
 	g := a.Echo.Group("/api/v1")
-
+	g.GET("/helth-check", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, echo.Map{
+			"messagge": "server is working",
+		})
+	})
 	delivery.SetRoutes(g, authHandler, authMw)
 
 	return nil
