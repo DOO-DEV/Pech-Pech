@@ -25,7 +25,7 @@ func (h AuthHandler) Register(c echo.Context) error {
 	res, err := h.authSvc.Register(c.Request().Context(), &req)
 	if err != nil {
 		// TODO - must implement an error richer
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusConflict, err)
 	}
 
 	return c.JSON(http.StatusCreated, res)

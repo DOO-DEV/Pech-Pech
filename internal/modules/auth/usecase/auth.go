@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"github.com/doo-dev/pech-pech/internal/models"
 	"github.com/doo-dev/pech-pech/internal/modules/auth/presenter"
 	authRepo "github.com/doo-dev/pech-pech/internal/modules/auth/repository"
@@ -41,10 +42,16 @@ func NewAuthService(uRepo userRepo.UserRepository, autRepo authRepo.AuthReposito
 func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterRequest) (*presenter.RegisterResponse, error) {
 	fmtUsername := strings.ToLower(dto.Username)
 
-	if _, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); err != nil {
+	if user, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); user != nil {
 		// TODO - implement rich error to find inner cause of error
 		// TODO - add log
-		return nil, constants.ErrUserExisted
+		if user != nil {
+			return nil, constants.ErrUserExisted
+		}
+
+		if !errors.Is(err, constants.ErrNoRecord) {
+			return nil, err
+		}
 	}
 	hashedPassword, err := helper.Encrypt(dto.Password)
 	if err != nil {
@@ -64,7 +71,7 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 	return &presenter.RegisterResponse{
 		ID:       user.ID,
 		Username: user.Username,
-		Email:    user.Password,
+		Email:    user.Email,
 	}, nil
 }
 

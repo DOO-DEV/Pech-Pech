@@ -37,9 +37,11 @@ func (a Api) Start(c chan error) {
 		c <- constants.ErrSetupHttpRouter
 	}
 
-	if err := a.Echo.StartServer(httpServer); err != nil {
-		c <- constants.ErrStartHttp
-	}
+	go func() {
+		if err := a.Echo.StartServer(httpServer); err != nil {
+			c <- constants.ErrStartHttp
+		}
+	}()
 }
 
 func (a Api) Stop(ctx context.Context) error {

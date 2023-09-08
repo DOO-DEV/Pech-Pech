@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/doo-dev/pech-pech/internal/server/adaptor"
+	"github.com/doo-dev/pech-pech/infrastructure/app"
 	"os"
 )
 
 func main() {
-	adaptor.NewAdapter()
+	app.Run()
 	defer os.Exit(0)
 }

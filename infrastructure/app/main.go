@@ -20,9 +20,9 @@ func Run() {
 
 	select {
 	case s := <-c:
-		log.Printf("server got terminate: %s\n", s.String())
+		log.Printf("\nserver got terminate: %s\n", s.String())
 	case err := <-adt.Notify():
-		log.Printf("server go error: %s\n", err.Error())
+		log.Printf("\nserver go error: %s\n", err.Error())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
