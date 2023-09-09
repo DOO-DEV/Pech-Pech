@@ -55,27 +55,6 @@ func (h AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-func (h AuthHandler) VerifyResetPasswordOtp(c echo.Context) error {
-	var req presenter.VerifyResetPasswordOtpRequest
-
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	if err := h.validator.ValidateVerifyOtpRequest(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	err := h.authSvc.VerifyOtp(c.Request().Context(), &req)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{
-		"message": "verify successfully",
-	})
-}
-
 func (h AuthHandler) ForgetPassword(c echo.Context) error {
 	req := presenter.ForgetPasswodRequest{}
 
@@ -97,17 +76,23 @@ func (h AuthHandler) ForgetPassword(c echo.Context) error {
 }
 
 func (h AuthHandler) ResetPassword(c echo.Context) error {
-	req := presenter.UpdatePasswordRequest{}
+	req := presenter.ResetPasswordRequest{}
 
 	if err := c.Bind(&req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	if err := h.validator.ValidateUpdatePasswordRequest(req); err != nil {
+	if err := h.validator.ValidateResetPassword(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return h.authSvc.ResetPassword(c.Request().Context(), &req)
+	if err := h.authSvc.ResetPassword(c.Request().Context(), &req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "password changed successfully",
+	})
 }
 
 func (h AuthHandler) UpdatePassword(c echo.Context) error {
@@ -117,9 +102,21 @@ func (h AuthHandler) UpdatePassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
+	userInfo := c.Get("user")
+	claims, ok := userInfo.(*usecase.AuthClaims)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "token is not valid")
+	}
+
 	if err := h.validator.ValidateUpdatePasswordRequest(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	return h.authSvc.UpdatePassword(c.Request().Context(), &req)
+	if err := h.authSvc.UpdatePassword(c.Request().Context(), &req, claims.Email); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusAccepted, echo.Map{
+		"message": "password updated successfully",
+	})
 }

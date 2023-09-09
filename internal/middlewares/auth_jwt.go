@@ -33,9 +33,7 @@ func (a AuthMiddleware) JwtValidate(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusInternalServerError, err)
 		}
 
-		c.Set("id", claims.ID)
-		c.Set("email", claims.Email)
-		c.Set("username", claims.Username)
+		c.Set("user", claims)
 
 		return next(c)
 	}

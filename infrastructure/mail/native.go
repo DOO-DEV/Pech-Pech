@@ -32,7 +32,7 @@ func NewMail(cfg Config) IMail {
 }
 
 func (m Mail) SendingMail(mail *Mail) error {
-	auth := smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, fmt.Sprintf(":%s", m.cfg.Port))
+	auth := smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
 
 	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\nThis is auto message from Pech-Pech\n\n%s", mail.To, mail.Subject, mail.Body))
 

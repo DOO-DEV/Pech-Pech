@@ -120,7 +120,7 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    userId,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.cfg.AccessTokenExpTimeoutInHours)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * a.cfg.AccessTokenExpTimeoutInHours)),
 		},
 	}
 
@@ -134,7 +134,7 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 }
 func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(SigningKey), nil
+		return []byte(a.cfg.JwtSigningKey), nil
 	})
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	return nil, err
 }
 
-func (a AuthService) ForgetPassword(ctx context.Context, email string) error {
+func (a AuthService) ForgetPassword(_ context.Context, email string) error {
 	otp := helper.RandomNumber(a.cfg.OtpLength)
 
 	newMail := &mail.Mail{
@@ -156,10 +156,11 @@ func (a AuthService) ForgetPassword(ctx context.Context, email string) error {
 		Body:    "Your OTP code is: " + otp,
 	}
 
-	cache.SetCache(cache.MailOtpKey(email), otp, a.cfg.OtpExpTimeoutInSeconds)
+	cache.SetCache(cache.MailOtpKey(email), otp, time.Second*a.cfg.OtpExpTimeoutInSeconds)
 	return a.mail.SendingMail(newMail)
 }
-func (a AuthService) VerifyOtp(_ context.Context, dto *presenter.VerifyResetPasswordOtpRequest) error {
+
+func (a AuthService) ResetPassword(ctx context.Context, dto *presenter.ResetPasswordRequest) error {
 	cacheKey := cache.MailOtpKey(dto.Email)
 	sentOtp := cache.GetCache(cacheKey)
 
@@ -173,12 +174,22 @@ func (a AuthService) VerifyOtp(_ context.Context, dto *presenter.VerifyResetPass
 	}
 
 	cache.RemoveFromCache(cacheKey)
-	return nil
-}
 
-func (a AuthService) ResetPassword(ctx context.Context, dto *presenter.UpdatePasswordRequest) error {
-	return a.authRepo.UpdatePassword(ctx, dto.Email, dto.Password)
+	if dto.Password != dto.ConfirmPassword {
+		return constants.ErrPasswordAndConfirmPasswordMatch
+	}
+
+	hashedPass, err := helper.Encrypt(dto.Password)
+	if err != nil {
+		return constants.ErrHashPassword
+	}
+
+	return a.authRepo.UpdatePassword(ctx, dto.Email, hashedPass)
 }
-func (a AuthService) UpdatePassword(ctx context.Context, dto *presenter.UpdatePasswordRequest) error {
-	return a.authRepo.UpdatePassword(ctx, dto.Email, dto.Password)
+func (a AuthService) UpdatePassword(ctx context.Context, dto *presenter.UpdatePasswordRequest, email string) error {
+	hashedPass, err := helper.Encrypt(dto.Password)
+	if err != nil {
+		return constants.ErrHashPassword
+	}
+	return a.authRepo.UpdatePassword(ctx, email, hashedPass)
 }

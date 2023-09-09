@@ -1,5 +1,5 @@
 migration-up:
-	@echo "Migrating up..."
+	@echo Migrating up...
 	go run cmd/migrate/main.go up
 
 migration-down:
