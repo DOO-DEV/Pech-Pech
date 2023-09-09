@@ -7,4 +7,4 @@ migration-down:
 	go run cmd/migrate/main.go down
 
 dev:
-	go run cmd/api/main.go
+	air -c .air.toml
