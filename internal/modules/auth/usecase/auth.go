@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
+	"github.com/doo-dev/pech-pech/infrastructure/cache"
+	"github.com/doo-dev/pech-pech/infrastructure/mail"
 	"github.com/doo-dev/pech-pech/internal/models"
 	"github.com/doo-dev/pech-pech/internal/modules/auth/presenter"
 	authRepo "github.com/doo-dev/pech-pech/internal/modules/auth/repository"
@@ -20,6 +22,14 @@ const (
 	SigningKey          = "hello"
 )
 
+type Config struct {
+	JwtSigningKey                string        `koanf:"jwt_signing_key"`
+	JwtPrefix                    string        `koanf:"jwt_prefix"`
+	AccessTokenExpTimeoutInHours time.Duration `koanf:"access_token_exp_timeout_in_hours"`
+	OtpLength                    int           `koanf:"otp_length"`
+	OtpExpTimeoutInSeconds       time.Duration `koanf:"otp_exp_timeout_in_seconds"`
+}
+
 type AuthClaims struct {
 	userID   string `json:"user_id"`
 	Email    string `json:"email"`
@@ -30,12 +40,16 @@ type AuthClaims struct {
 type AuthService struct {
 	userRepo userRepo.UserRepository
 	authRepo authRepo.AuthRepository
+	mail     mail.IMail
+	cfg      Config
 }
 
-func NewAuthService(uRepo userRepo.UserRepository, autRepo authRepo.AuthRepository) AuthService {
+func NewAuthService(cfg Config, uRepo userRepo.UserRepository, autRepo authRepo.AuthRepository, m mail.IMail) AuthService {
 	return AuthService{
 		userRepo: uRepo,
 		authRepo: autRepo,
+		mail:     m,
+		cfg:      cfg,
 	}
 }
 
@@ -76,7 +90,7 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 }
 
 func (a AuthService) Login(ctx context.Context, dto *presenter.LoginRequest) (*presenter.LoginResponse, error) {
-	user, err := a.userRepo.GetUserByIdOrUsername(ctx, dto.UsernameOrEmail)
+	user, err := a.userRepo.GetUserByIdOrUsername(ctx, dto.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +119,13 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 		Email:    email,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: userId,
-			// TODO - add exp timeout to config
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExpirationTime)),
+			Issuer:    userId,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.cfg.AccessTokenExpTimeoutInHours)),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// TODO - add sign key and sign method to config
-	tokenStr, err := token.SignedString([]byte(SigningKey))
+	tokenStr, err := token.SignedString([]byte(a.cfg.JwtSigningKey))
 	if err != nil {
 		return "", err
 	}
@@ -135,7 +147,38 @@ func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	return nil, err
 }
 
-func (a AuthService) ForgetPassword() {}
-func (a AuthService) VerifyOtp()      {}
-func (a AuthService) ResetPassword()  {}
-func (a AuthService) UpdatePassword() {}
+func (a AuthService) ForgetPassword(ctx context.Context, email string) error {
+	otp := helper.RandomNumber(a.cfg.OtpLength)
+
+	newMail := &mail.Mail{
+		To:      email,
+		Subject: "Reset Pech-Pech password",
+		Body:    "Your OTP code is: " + otp,
+	}
+
+	cache.SetCache(cache.MailOtpKey(email), otp, a.cfg.OtpExpTimeoutInSeconds)
+	return a.mail.SendingMail(newMail)
+}
+func (a AuthService) VerifyOtp(_ context.Context, dto *presenter.VerifyResetPasswordOtpRequest) error {
+	cacheKey := cache.MailOtpKey(dto.Email)
+	sentOtp := cache.GetCache(cacheKey)
+
+	if sentOtp == nil {
+		// TODO - log this
+		return constants.ErrOtpExpired
+	}
+
+	if sentOtp.(string) != dto.Code {
+		return constants.ErrOtpInvalid
+	}
+
+	cache.RemoveFromCache(cacheKey)
+	return nil
+}
+
+func (a AuthService) ResetPassword(ctx context.Context, dto *presenter.UpdatePasswordRequest) error {
+	return a.authRepo.UpdatePassword(ctx, dto.Email, dto.Password)
+}
+func (a AuthService) UpdatePassword(ctx context.Context, dto *presenter.UpdatePasswordRequest) error {
+	return a.authRepo.UpdatePassword(ctx, dto.Email, dto.Password)
+}

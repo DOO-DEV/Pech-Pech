@@ -7,12 +7,20 @@ import (
 	"log"
 )
 
-type Postgres struct {
-	db *gorm.DB
+type Config struct {
+	Host     string `koanf:"host"`
+	Username string `koanf:"username"`
+	Password string `koanf:"password"`
+	Name     string `koanf:"name"`
 }
 
-func NewPostgresAdapter() PgAdapter {
-	return Postgres{db: &gorm.DB{}}
+type Postgres struct {
+	db  *gorm.DB
+	cfg Config
+}
+
+func NewPostgresAdapter(cfg Config) PgAdapter {
+	return Postgres{db: &gorm.DB{}, cfg: cfg}
 }
 
 func (p Postgres) getInstance(uri string) *gorm.DB {
@@ -26,7 +34,7 @@ func (p Postgres) getInstance(uri string) *gorm.DB {
 
 func (p Postgres) ConnectInstance() *gorm.DB {
 	// TODO - config all these database connecting string
-	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s", "doo-dev", "123456", "localhost", "online-chat")
+	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s", p.cfg.Username, p.cfg.Password, p.cfg.Host, p.cfg.Name)
 	db := p.getInstance(dsn)
 
 	return db

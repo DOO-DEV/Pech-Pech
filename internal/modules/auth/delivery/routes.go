@@ -10,4 +10,8 @@ func SetRoutes(g *echo.Group, h AuthHandler, mw *middlewares.AuthMiddleware) {
 
 	authGroup.POST("/register", h.Register)
 	authGroup.POST("/login", h.Login)
+	authGroup.POST("/forget-password", h.ForgetPassword)
+	authGroup.POST("/verify-otp", h.VerifyResetPasswordOtp)
+	authGroup.PATCH("/reset-password", h.ResetPassword)
+	authGroup.PATCH("/update-password", h.UpdatePassword, mw.JwtValidate)
 }

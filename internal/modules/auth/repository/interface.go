@@ -7,4 +7,5 @@ import (
 
 type AuthRepository interface {
 	CreateUser(ctx context.Context, user *models.User) error
+	UpdatePassword(ctx context.Context, email, password string) error
 }

@@ -2,6 +2,9 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"github.com/doo-dev/pech-pech/infrastructure/mail"
+	autConfing "github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -9,9 +12,19 @@ import (
 	"time"
 )
 
+type Config struct {
+	Port                     string        `koanf:"port"`
+	ReadTimeoutInSeconds     time.Duration `koanf:"read_timeout_in_seconds"`
+	WriteTimeoutInSeconds    time.Duration `koanf:"write_timeout_in_seconds"`
+	ShutDownTimeoutInSeconds time.Duration `koanf:"shut_down_timeout_in_seconds"`
+}
+
 type Api struct {
-	Echo *echo.Echo
-	pgDB *gorm.DB
+	Echo     *echo.Echo
+	pgDB     *gorm.DB
+	authConf autConfing.Config
+	mailConf mail.Config
+	cfg      Config
 }
 
 type IApi interface {
@@ -20,18 +33,21 @@ type IApi interface {
 	Stop(context.Context) error
 }
 
-func NewApi(e *echo.Echo, pgDB *gorm.DB) IApi {
+func NewApi(cfg Config, authCfg autConfing.Config, mailCfg mail.Config, e *echo.Echo, pgDB *gorm.DB) IApi {
 	return Api{
-		Echo: e,
-		pgDB: pgDB,
+		Echo:     e,
+		pgDB:     pgDB,
+		authConf: authCfg,
+		mailConf: mailCfg,
+		cfg:      cfg,
 	}
 }
 
 func (a Api) Start(c chan error) {
 	httpServer := &http.Server{
-		Addr:         ":8080",
-		WriteTimeout: time.Second * 60,
-		ReadTimeout:  time.Second * 60,
+		Addr:         fmt.Sprintf(":%s", a.cfg.Port),
+		WriteTimeout: time.Second * a.cfg.WriteTimeoutInSeconds,
+		ReadTimeout:  time.Second * a.cfg.ReadTimeoutInSeconds,
 	}
 	if err := a.HttpApi(); err != nil {
 		c <- constants.ErrSetupHttpRouter

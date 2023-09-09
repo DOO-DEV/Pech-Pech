@@ -9,4 +9,6 @@ var (
 	ErrNoRecord        = errors.New("record not found")
 	ErrSetupHttpRouter = errors.New("error while setting up http router")
 	ErrStartHttp       = errors.New("start http server failed")
+	ErrOtpExpired      = errors.New("otp is expired")
+	ErrOtpInvalid      = errors.New("otp is invalid")
 )

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/doo-dev/pech-pech/config"
 	"github.com/doo-dev/pech-pech/internal/server/adaptor"
 	"log"
 	"os"
@@ -11,12 +12,14 @@ import (
 )
 
 func Run() {
+	cfg := config.Load()
+
 	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, syscall.SIGHUP, syscall.SIGQUIT)
 	signal.Notify(c, os.Kill)
 
-	adt := adaptor.NewAdapter()
+	adt := adaptor.NewAdapter(cfg.PgDB, cfg.HttpServer, cfg.AuthConfig, cfg.MailConfig)
 
 	select {
 	case s := <-c:
@@ -25,6 +28,7 @@ func Run() {
 		log.Printf("\nserver go error: %s\n", err.Error())
 	}
 
+	// TODO - config timeout
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 

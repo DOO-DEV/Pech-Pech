@@ -1,19 +1,8 @@
 package presenter
 
-import "strings"
-
 type LoginRequest struct {
-	UsernameOrEmail string `json:"username_or_email"`
-	Password        string `json:"password"`
-}
-
-func (l LoginRequest) IsLoginReqValid() {
-	atIdx := strings.IndexByte(l.UsernameOrEmail, '@')
-	if atIdx == 0 {
-		return
-	}
-
-	return
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
