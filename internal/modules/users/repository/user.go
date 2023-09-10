@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/doo-dev/pech-pech/internal/models"
-	"github.com/doo-dev/pech-pech/pkg/constants"
+	"github.com/doo-dev/pech-pech/pkg/richerror"
 	"gorm.io/gorm"
 	"strconv"
 )
@@ -17,6 +17,8 @@ func NewUserRepository(pgDB *gorm.DB) *userRepository {
 }
 
 func (a userRepository) GetUserByIdOrUsername(ctx context.Context, idOrUsername string) (*models.User, error) {
+	const op = "psql.GetUserByIdOrUsername"
+
 	user := &models.User{}
 
 	_, err := strconv.Atoi(idOrUsername)
@@ -27,7 +29,7 @@ func (a userRepository) GetUserByIdOrUsername(ctx context.Context, idOrUsername 
 	}
 
 	if err := a.pgDB.WithContext(ctx).Where(user).First(user).Error; err != nil {
-		return nil, constants.ErrNoRecord
+		return nil, richerror.New(op).WithError(err).WithKind(richerror.KindNotFound)
 	}
 
 	return user, nil

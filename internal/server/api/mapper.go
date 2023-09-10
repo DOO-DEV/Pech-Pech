@@ -6,6 +6,7 @@ import (
 	"github.com/doo-dev/pech-pech/infrastructure/mail"
 	autConfing "github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
 	"github.com/doo-dev/pech-pech/pkg/constants"
+	"github.com/doo-dev/pech-pech/pkg/richerror"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 	"net/http"
@@ -44,18 +45,20 @@ func NewApi(cfg Config, authCfg autConfing.Config, mailCfg mail.Config, e *echo.
 }
 
 func (a Api) Start(c chan error) {
+	const op = "api.Start"
+
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%s", a.cfg.Port),
 		WriteTimeout: time.Second * a.cfg.WriteTimeoutInSeconds,
 		ReadTimeout:  time.Second * a.cfg.ReadTimeoutInSeconds,
 	}
 	if err := a.HttpApi(); err != nil {
-		c <- constants.ErrSetupHttpRouter
+		c <- richerror.New(op).WithError(err).WithKind(richerror.KindUnexpected).WithMessage(constants.ErrMsgSetupHttpRouter)
 	}
 
 	go func() {
 		if err := a.Echo.StartServer(httpServer); err != nil {
-			c <- constants.ErrStartHttp
+			c <- richerror.New(op).WithError(err).WithKind(richerror.KindUnexpected).WithMessage(constants.ErrMsgStartHttp)
 		}
 	}()
 }
