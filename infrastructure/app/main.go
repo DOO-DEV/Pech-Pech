@@ -29,7 +29,7 @@ func Run() {
 	}
 
 	// TODO - config timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*cfg.HttpServer.ShutDownTimeoutInSeconds)
 	defer cancel()
 
 	p, _ := os.FindProcess(os.Getpid())

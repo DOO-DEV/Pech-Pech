@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"github.com/doo-dev/pech-pech/infrastructure/cache"
 	"github.com/doo-dev/pech-pech/infrastructure/mail"
 	"github.com/doo-dev/pech-pech/internal/models"
@@ -11,15 +10,11 @@ import (
 	userRepo "github.com/doo-dev/pech-pech/internal/modules/users/repository"
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/helper"
+	"github.com/doo-dev/pech-pech/pkg/richerror"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"strings"
 	"time"
-)
-
-const (
-	TokenExpirationTime = 4 * time.Hour
-	SigningKey          = "hello"
 )
 
 type Config struct {
@@ -54,22 +49,17 @@ func NewAuthService(cfg Config, uRepo userRepo.UserRepository, autRepo authRepo.
 }
 
 func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterRequest) (*presenter.RegisterResponse, error) {
+	const op = "authservice.Register"
+
 	fmtUsername := strings.ToLower(dto.Username)
 
-	if user, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); user != nil {
-		// TODO - implement rich error to find inner cause of error
+	if _, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); err != nil {
 		// TODO - add log
-		if user != nil {
-			return nil, constants.ErrUserExisted
-		}
-
-		if !errors.Is(err, constants.ErrNoRecord) {
-			return nil, err
-		}
+		return nil, richerror.New(op).WithError(err)
 	}
 	hashedPassword, err := helper.Encrypt(dto.Password)
 	if err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 	user := &models.User{
 		ID:       uuid.New().String(),
@@ -79,7 +69,7 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 	}
 
 	if err := a.authRepo.CreateUser(ctx, user); err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 
 	return &presenter.RegisterResponse{
@@ -90,18 +80,20 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 }
 
 func (a AuthService) Login(ctx context.Context, dto *presenter.LoginRequest) (*presenter.LoginResponse, error) {
+	const op = "authservice.Login"
+
 	user, err := a.userRepo.GetUserByIdOrUsername(ctx, dto.Username)
 	if err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 
 	if err := helper.Decrypt(dto.Password, user.Password); err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 	// We can read token from a in app memory cache but I'm not sure is it good
 	token, err := a.createToken(user.ID, user.Username, user.Email)
 	if err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 	res := &presenter.LoginResponse{
 		UserId:   user.ID,
@@ -114,6 +106,8 @@ func (a AuthService) Login(ctx context.Context, dto *presenter.LoginRequest) (*p
 
 }
 func (a AuthService) createToken(userId string, username, email string) (string, error) {
+	const op = "authservice.createToken"
+
 	claims := &AuthClaims{
 		userID:   userId,
 		Email:    email,
@@ -127,27 +121,31 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString([]byte(a.cfg.JwtSigningKey))
 	if err != nil {
-		return "", err
+		return "", richerror.New(op).WithError(err)
 	}
 
 	return tokenStr, nil
 }
 func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
+	const op = "authService.ParseToken"
+
 	token, err := jwt.ParseWithClaims(tokenStr, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.cfg.JwtSigningKey), nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, richerror.New(op).WithError(err)
 	}
 
 	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-		return claims, nil
+		return claims, richerror.New(op).WithError(err)
 	}
 
 	return nil, err
 }
 
 func (a AuthService) ForgetPassword(_ context.Context, email string) error {
+	const op = "authservice.ForgetPassword"
+
 	otp := helper.RandomNumber(a.cfg.OtpLength)
 
 	newMail := &mail.Mail{
@@ -161,35 +159,39 @@ func (a AuthService) ForgetPassword(_ context.Context, email string) error {
 }
 
 func (a AuthService) ResetPassword(ctx context.Context, dto *presenter.ResetPasswordRequest) error {
+	const op = "authservice.ResetPassword"
+
 	cacheKey := cache.MailOtpKey(dto.Email)
 	sentOtp := cache.GetCache(cacheKey)
 
 	if sentOtp == nil {
 		// TODO - log this
-		return constants.ErrOtpExpired
+		richerror.New(op).WithMessage(constants.ErrMsgOtpExpired)
 	}
 
 	if sentOtp.(string) != dto.Code {
-		return constants.ErrOtpInvalid
+		return richerror.New(op).WithMessage(constants.ErrMsgOtpInvalid)
 	}
 
 	cache.RemoveFromCache(cacheKey)
 
 	if dto.Password != dto.ConfirmPassword {
-		return constants.ErrPasswordAndConfirmPasswordMatch
+		return richerror.New(op).WithMessage(constants.ErrMsgPasswordAndConfirmPasswordMatch)
 	}
 
 	hashedPass, err := helper.Encrypt(dto.Password)
 	if err != nil {
-		return constants.ErrHashPassword
+		return richerror.New(op).WithMessage(constants.ErrMsgHashPassword)
 	}
 
 	return a.authRepo.UpdatePassword(ctx, dto.Email, hashedPass)
 }
 func (a AuthService) UpdatePassword(ctx context.Context, dto *presenter.UpdatePasswordRequest, email string) error {
+	const op = "authservice.UpdatePassword"
+
 	hashedPass, err := helper.Encrypt(dto.Password)
 	if err != nil {
-		return constants.ErrHashPassword
+		return richerror.New(op).WithMessage(constants.ErrMsgHashPassword)
 	}
 	return a.authRepo.UpdatePassword(ctx, email, hashedPass)
 }

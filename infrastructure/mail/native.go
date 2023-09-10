@@ -2,6 +2,7 @@ package mail
 
 import (
 	"fmt"
+	"github.com/doo-dev/pech-pech/pkg/richerror"
 	"net/smtp"
 )
 
@@ -32,6 +33,8 @@ func NewMail(cfg Config) IMail {
 }
 
 func (m Mail) SendingMail(mail *Mail) error {
+	const op = "mail.SendMail"
+
 	auth := smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
 
 	msg := []byte(fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\nThis is auto message from Pech-Pech\n\n%s", mail.To, mail.Subject, mail.Body))
@@ -47,5 +50,7 @@ func (m Mail) SendingMail(mail *Mail) error {
 		}
 	}()
 
-	return err
+	return richerror.New(op).
+		WithError(err).
+		WithKind(richerror.KindUnexpected)
 }
