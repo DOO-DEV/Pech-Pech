@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
+	"github.com/doo-dev/pech-pech/pkg/httperr"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
@@ -30,7 +31,8 @@ func (a AuthMiddleware) JwtValidate(next echo.HandlerFunc) echo.HandlerFunc {
 
 		claims, err := a.authSvc.ParseToken(headerParts[1])
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err)
+			code, msg := httperr.Error(err)
+			return echo.NewHTTPError(code, msg)
 		}
 
 		c.Set("user", claims)
