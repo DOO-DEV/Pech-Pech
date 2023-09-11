@@ -49,8 +49,10 @@ func (m Mail) SendingMail(mail *Mail) error {
 			fmt.Println(err)
 		}
 	}()
-
-	return richerror.New(op).
-		WithError(err).
-		WithKind(richerror.KindUnexpected)
+	if err != nil {
+		return richerror.New(op).
+			WithError(err).
+			WithKind(richerror.KindUnexpected)
+	}
+	return nil
 }

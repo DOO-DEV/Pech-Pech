@@ -6,11 +6,10 @@ import (
 )
 
 func SetRoutes(g *echo.Group, h AuthHandler, mw *middlewares.AuthMiddleware) {
-	authGroup := g.Group("/auth")
 
-	authGroup.POST("/register", h.Register)
-	authGroup.POST("/login", h.Login)
-	authGroup.POST("/forget-password", h.ForgetPassword)
-	authGroup.PATCH("/reset-password", h.ResetPassword)
-	authGroup.PATCH("/update-password", h.UpdatePassword, mw.JwtValidate)
+	g.POST("/register", h.Register)
+	g.POST("/login", h.Login)
+	g.POST("/forget-password", h.ForgetPassword)
+	g.PATCH("/reset-password", h.ResetPassword)
+	g.PATCH("/update-password", h.UpdatePassword, mw.JwtValidate)
 }

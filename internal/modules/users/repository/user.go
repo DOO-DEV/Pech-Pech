@@ -2,7 +2,10 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/doo-dev/pech-pech/internal/models"
+	"github.com/doo-dev/pech-pech/pkg/abstract"
+	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/richerror"
 	"gorm.io/gorm"
 	"strconv"
@@ -33,4 +36,21 @@ func (a userRepository) GetUserByIdOrUsername(ctx context.Context, idOrUsername 
 	}
 
 	return user, nil
+}
+
+func (a userRepository) Search(ctx context.Context, name string, pagination *abstract.Pagination) ([]*models.User, error) {
+	const op = "psql.Search"
+
+	fmt.Println(pagination.GetSize(), pagination.GetOffset(), name)
+	var users []*models.User
+	if err := a.pgDB.WithContext(ctx).Where("username LIKE ?", "%"+name+"%").
+		Limit(pagination.GetPage()).Offset(pagination.GetSize()).Find(&users).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, richerror.New(op).WithError(err).
+				WithKind(richerror.KindNotFound).WithMessage(constants.ErrMsgNoRecord)
+		}
+		return nil, richerror.New(op).WithError(err).WithKind(richerror.KindUnexpected)
+	}
+
+	return users, nil
 }

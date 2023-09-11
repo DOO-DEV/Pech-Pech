@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"github.com/doo-dev/pech-pech/infrastructure/cache"
 	"github.com/doo-dev/pech-pech/infrastructure/mail"
 	"github.com/doo-dev/pech-pech/internal/models"
@@ -133,14 +134,15 @@ func (a AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 		return []byte(a.cfg.JwtSigningKey), nil
 	})
 	if err != nil {
+		fmt.Println("parsing error", err)
 		return nil, richerror.New(op).WithError(err)
 	}
 
 	if claims, ok := token.Claims.(*AuthClaims); ok && token.Valid {
-		return claims, richerror.New(op).WithError(err)
+		return claims, nil
 	}
 
-	return nil, err
+	return nil, richerror.New(op).WithError(err)
 }
 
 func (a AuthService) ForgetPassword(_ context.Context, email string) error {
