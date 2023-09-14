@@ -7,7 +7,6 @@ import (
 	"github.com/doo-dev/pech-pech/internal/modules/rooms/presenter"
 	"github.com/doo-dev/pech-pech/internal/modules/rooms/repository"
 	"github.com/doo-dev/pech-pech/pkg/richerror"
-	"github.com/google/uuid"
 )
 
 type RoomsSvc struct {
@@ -21,9 +20,9 @@ func NewRoomSvc(roomRepo repository.RoomRepository) RoomsSvc {
 func (r RoomsSvc) CreateRoom(ctx context.Context, req *presenter.CreateRoomRequest, userID string) error {
 	const op = "roomservice.CreateRoom"
 
-	fmt.Print(req, userID)
+	fmt.Print("user id is: ", userID)
 	room := &models.Room{
-		ID:          uuid.New().String(),
+		Name:        req.Name,
 		Description: req.Description,
 		Category:    req.Category,
 		CreatedBy:   userID,
@@ -36,15 +35,25 @@ func (r RoomsSvc) CreateRoom(ctx context.Context, req *presenter.CreateRoomReque
 	return nil
 }
 
-func (r RoomsSvc) GetRooms(ctx context.Context, userID string) ([]*models.Room, error) {
+func (r RoomsSvc) GetRooms(ctx context.Context, userID string) ([]*presenter.GetRoomsResponse, error) {
 	const op = "roomservice.GetRooms"
 
 	rooms, err := r.roomRepo.GetUserRooms(ctx, userID)
 	if err != nil {
 		return nil, richerror.New(op).WithError(err)
 	}
-
-	return rooms, nil
+	var res []*presenter.GetRoomsResponse
+	for _, v := range rooms {
+		r := &presenter.GetRoomsResponse{
+			Name:        v.Name,
+			Description: v.Description,
+			Category:    v.Category,
+			CreatedAt:   v.CreatedAt,
+		}
+		res = append(res, r)
+	}
+	
+	return res, nil
 }
 
 func (r RoomsSvc) DeleteRoom()        {}

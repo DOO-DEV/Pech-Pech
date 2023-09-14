@@ -23,13 +23,13 @@ func (a AuthMiddleware) JwtValidate(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		}
 
-		headerParts := strings.Split(authorization, " ")
+		token := strings.TrimPrefix(authorization, "Bearer ")
 		// TODO - add prefix to config
-		if len(headerParts) != 2 && headerParts[0] != "Bearer" {
+		if len(token) < 1 {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		}
 
-		claims, err := a.authSvc.ParseToken(headerParts[1])
+		claims, err := a.authSvc.ParseToken(token)
 		if err != nil {
 			code, msg := httperr.Error(err)
 			return echo.NewHTTPError(code, msg)

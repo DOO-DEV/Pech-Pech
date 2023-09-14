@@ -19,7 +19,11 @@ func NewRoomHandler(roomSvc usecase.RoomsSvc, validator presenter.RoomValidator)
 }
 
 func (h RoomHandler) CreateRoom(c echo.Context) error {
-	var req *presenter.CreateRoomRequest
+	var req presenter.CreateRoomRequest
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
 
 	fields, err := h.validator.ValidateCreateRoomRequest(req)
 	if err != nil {
@@ -29,18 +33,21 @@ func (h RoomHandler) CreateRoom(c echo.Context) error {
 			"errors":  fields,
 		})
 	}
+
 	userInfo := c.Get("user")
 	claims, ok := userInfo.(*authSvc.AuthClaims)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "token is invalid")
 	}
 
-	if err := h.roomSvc.CreateRoom(c.Request().Context(), req, claims.ID); err != nil {
+	if err := h.roomSvc.CreateRoom(c.Request().Context(), &req, claims.UserID); err != nil {
 		code, msg := httperr.Error(err)
 		return c.JSON(code, msg)
 	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "room successfully created",
+	})
 }
 
 func (h RoomHandler) GetUserRooms(c echo.Context) error {
@@ -50,7 +57,7 @@ func (h RoomHandler) GetUserRooms(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "token is invalid")
 	}
 
-	rooms, err := h.roomSvc.GetRooms(c.Request().Context(), claims.ID)
+	rooms, err := h.roomSvc.GetRooms(c.Request().Context(), claims.UserID)
 	if err != nil {
 		code, msg := httperr.Error(err)
 		return echo.NewHTTPError(code, msg)

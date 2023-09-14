@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"github.com/doo-dev/pech-pech/internal/models"
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/richerror"
@@ -21,7 +22,8 @@ func (r roomRepository) CreateRoom(ctx context.Context, room *models.Room) error
 	const op = "roomrepository.CreateRoom"
 
 	if err := r.pgDB.WithContext(ctx).Create(room).Error; err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
 			// duplicate key
 			if pgErr.Code == "23505" {
 				return richerror.New(op).WithError(err).WithKind(richerror.KindInvalid).
@@ -37,9 +39,9 @@ func (r roomRepository) CreateRoom(ctx context.Context, room *models.Room) error
 
 func (r roomRepository) GetUserRooms(ctx context.Context, userID string) ([]*models.Room, error) {
 	const op = "roomrepository.GetUserRooms"
-	var rooms []*models.Room
 
-	if err := r.pgDB.WithContext(ctx).Where(`create_by = ?`, userID).Find(&rooms).Error; err != nil {
+	var rooms []*models.Room
+	if err := r.pgDB.WithContext(ctx).Where(`created_by = ?`, userID).Find(&rooms).Error; err != nil {
 		return nil, richerror.New(op).WithError(err)
 	}
 
