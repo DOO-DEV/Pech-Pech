@@ -1,7 +1,6 @@
-package delivery
+package presenter
 
 import (
-	"github.com/doo-dev/pech-pech/internal/modules/rooms/presenter"
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/richerror"
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -14,7 +13,7 @@ func NewRoomValidator() RoomValidator {
 	return RoomValidator{}
 }
 
-func (v RoomValidator) ValidateCreateRoomRequest(req *presenter.CreateRoomRequest) (map[string]string, error) {
+func (v RoomValidator) ValidateCreateRoomRequest(req *CreateRoomRequest) (map[string]string, error) {
 	const op = "validator.ValidateCreateRoomRequest"
 
 	err := validation.ValidateStruct(&req,
