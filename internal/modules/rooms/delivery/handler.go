@@ -65,3 +65,65 @@ func (h RoomHandler) GetUserRooms(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, rooms)
 }
+
+func (h RoomHandler) DeleteRoom(c echo.Context) error {
+	var req presenter.DeleteRoomRequest
+
+	userInfo := c.Get("user")
+	claims, ok := userInfo.(*authSvc.AuthClaims)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "token is invalid")
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest)
+	}
+
+	if field, err := h.validator.ValidateDeleteRequest(req); err != nil {
+		code, msg := httperr.Error(err)
+		return c.JSON(code, echo.Map{
+			"message": msg,
+			"errors":  field,
+		})
+	}
+
+	if err := h.roomSvc.DeleteRoom(c.Request().Context(), &req, claims.UserID); err != nil {
+		code, msg := httperr.Error(err)
+		return c.JSON(code, msg)
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "room deleted successfully",
+	})
+}
+
+func (h RoomHandler) UpdateRoom(c echo.Context) error {
+	var req presenter.UpdateRoomInfoRequest
+
+	userInfo := c.Get("user")
+	claims, ok := userInfo.(*authSvc.AuthClaims)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "token is invalid")
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	field, err := h.validator.ValidateUpdateRoomRequest(req)
+	if err != nil {
+		code, msg := httperr.Error(err)
+		return c.JSON(code, echo.Map{
+			"message": msg,
+			"errors":  field,
+		})
+	}
+
+	room, err := h.roomSvc.UpdateRoomInfo(c.Request().Context(), &req, claims.UserID)
+	if err != nil {
+		code, msg := httperr.Error(err)
+		return c.JSON(code, msg)
+	}
+
+	return c.JSON(http.StatusOK, room)
+}

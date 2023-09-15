@@ -5,7 +5,9 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func SetRoutes(g *echo.Group, h *RoomHandler, mw *middlewares.AuthMiddleware) {
-	g.POST("/create", h.CreateRoom)
+func SetRoutes(g *echo.Group, h *RoomHandler, _ *middlewares.AuthMiddleware) {
+	g.POST("", h.CreateRoom)
 	g.GET("", h.GetUserRooms)
+	g.DELETE("", h.DeleteRoom)
+	g.PATCH("", h.UpdateRoom)
 }

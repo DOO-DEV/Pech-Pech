@@ -47,3 +47,23 @@ func (r roomRepository) GetUserRooms(ctx context.Context, userID string) ([]*mod
 
 	return rooms, nil
 }
+
+func (r roomRepository) DeleteRoom(ctx context.Context, name, userID string) error {
+	const op = "roomrepository.DeleteRoom"
+
+	if err := r.pgDB.WithContext(ctx).Delete(&models.Room{}, `name = ? and created_by = ?`, name, userID).Error; err != nil {
+		return richerror.New(op).WithError(err).WithKind(richerror.KindNotFound).WithMessage(constants.ErrMsgNoRecord)
+	}
+
+	return nil
+}
+
+func (r roomRepository) UpdateRoom(ctx context.Context, room *models.Room, oldRoomName, userID string) (*models.Room, error) {
+	const op = "roomserivce.UpdateRoom"
+
+	if err := r.pgDB.WithContext(ctx).Where(`created_by = ? and name = ?`, userID, oldRoomName).Updates(room).Error; err != nil {
+		return nil, richerror.New(op).WithError(err).WithKind(richerror.KindNotFound).WithMessage(constants.ErrMsgNoRecord)
+	}
+
+	return room, nil
+}

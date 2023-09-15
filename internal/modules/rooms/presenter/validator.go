@@ -30,6 +30,34 @@ func (v RoomValidator) ValidateCreateRoomRequest(req CreateRoomRequest) (map[str
 	return nil, nil
 }
 
+func (v RoomValidator) ValidateDeleteRequest(req DeleteRoomRequest) (map[string]string, error) {
+	const op = "validator.DeleteRoom"
+
+	err := validation.ValidateStruct(&req,
+		validation.Field(&req.Name, validation.Required, is.ASCII, validation.Length(3, 20)),
+	)
+	if err != nil {
+		return v.convertErrorsToMap(err, op)
+	}
+
+	return nil, nil
+}
+
+func (v RoomValidator) ValidateUpdateRoomRequest(req UpdateRoomInfoRequest) (map[string]string, error) {
+	const op = "validator.UpdateRoom"
+
+	err := validation.ValidateStruct(&req,
+		validation.Field(&req.OldName, validation.Required, is.ASCII, validation.Length(3, 20)),
+		validation.Field(&req.NewName, validation.Required, is.ASCII, validation.Length(3, 20)),
+		validation.Field(&req.Description, is.ASCII, validation.Length(3, 50)),
+	)
+	if err != nil {
+		return v.convertErrorsToMap(err, op)
+	}
+
+	return nil, nil
+}
+
 func (v RoomValidator) convertErrorsToMap(err error, op richerror.Op) (map[string]string, error) {
 	fields := make(map[string]string)
 
