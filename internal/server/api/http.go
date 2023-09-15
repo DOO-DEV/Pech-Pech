@@ -7,6 +7,10 @@ import (
 	"github.com/doo-dev/pech-pech/internal/modules/auth/presenter"
 	authRepository "github.com/doo-dev/pech-pech/internal/modules/auth/repository"
 	authService "github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
+	roomDelivery "github.com/doo-dev/pech-pech/internal/modules/rooms/delivery"
+	roomPresenter "github.com/doo-dev/pech-pech/internal/modules/rooms/presenter"
+	roomRepository "github.com/doo-dev/pech-pech/internal/modules/rooms/repository"
+	roomService "github.com/doo-dev/pech-pech/internal/modules/rooms/usecase"
 	userDelivery "github.com/doo-dev/pech-pech/internal/modules/users/delivery"
 	userRepository "github.com/doo-dev/pech-pech/internal/modules/users/repository"
 	userService "github.com/doo-dev/pech-pech/internal/modules/users/usecase"
@@ -26,6 +30,11 @@ func (a Api) HttpApi() error {
 
 	authMw := middlewares.NewAuthMiddleware(authSvc)
 
+	roomRepo := roomRepository.NewRoomRepository(a.pgDB)
+	roomSvc := roomService.NewRoomSvc(roomRepo)
+	roomValidator := roomPresenter.NewRoomValidator()
+	roomHandler := roomDelivery.NewRoomHandler(roomSvc, roomValidator)
+
 	p := a.Echo.Group("/api/v1")
 
 	authGroup := p.Group("/auth")
@@ -33,6 +42,9 @@ func (a Api) HttpApi() error {
 
 	userGroup := p.Group("/users")
 	userDelivery.SetRoutes(userGroup, userHandler, authMw)
+
+	roomGroup := p.Group("/rooms", authMw.JwtValidate)
+	roomDelivery.SetRoutes(roomGroup, &roomHandler, authMw)
 
 	return nil
 }

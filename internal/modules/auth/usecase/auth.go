@@ -27,7 +27,7 @@ type Config struct {
 }
 
 type AuthClaims struct {
-	userID   string `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
@@ -110,7 +110,7 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 	const op = "authservice.createToken"
 
 	claims := &AuthClaims{
-		userID:   userId,
+		UserID:   userId,
 		Email:    email,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -118,7 +118,6 @@ func (a AuthService) createToken(userId string, username, email string) (string,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * a.cfg.AccessTokenExpTimeoutInHours)),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString([]byte(a.cfg.JwtSigningKey))
 	if err != nil {
