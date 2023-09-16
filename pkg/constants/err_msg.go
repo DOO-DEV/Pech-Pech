@@ -6,6 +6,7 @@ const (
 	ErrMsgNoRecord                        = "record not found"
 	ErrMsgSetupHttpRouter                 = "error while setting up http router"
 	ErrMsgStartHttp                       = "start http server failed"
+	ErrMsgWsStart                         = "start websocket failed"
 	ErrMsgOtpExpired                      = "otp is expired"
 	ErrMsgOtpInvalid                      = "otp is invalid"
 	ErrMsgPasswordAndConfirmPasswordMatch = "password and its confirm are not equal"

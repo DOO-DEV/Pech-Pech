@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"github.com/doo-dev/pech-pech/internal/models"
 	"github.com/doo-dev/pech-pech/pkg/constants"
 	"github.com/doo-dev/pech-pech/pkg/richerror"
@@ -23,7 +24,8 @@ func (a authRepository) CreateUser(ctx context.Context, user *models.User) error
 	if err := a.pgDB.WithContext(ctx).Create(&user).Error; err != nil {
 		// TODO - log error
 		// TODO - find a better solution for this error
-		if pgErr, ok := err.(*pgconn.PgError); ok {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
 			// duplicate key
 			if pgErr.Code == "23505" {
 				return richerror.New(op).WithError(err).WithKind(richerror.KindInvalid).

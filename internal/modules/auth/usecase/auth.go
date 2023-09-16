@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/doo-dev/pech-pech/infrastructure/cache"
 	"github.com/doo-dev/pech-pech/infrastructure/mail"
@@ -54,9 +55,9 @@ func (a AuthService) Register(ctx context.Context, dto *presenter.RegisterReques
 
 	fmtUsername := strings.ToLower(dto.Username)
 
-	if _, err := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); err != nil {
+	if user, _ := a.userRepo.GetUserByIdOrUsername(ctx, fmtUsername); user != nil {
 		// TODO - add log
-		return nil, richerror.New(op).WithError(err)
+		return nil, richerror.New(op).WithError(errors.New(constants.ErrMsgUsernameExisted)).WithKind(richerror.KindNotFound)
 	}
 	hashedPassword, err := helper.Encrypt(dto.Password)
 	if err != nil {

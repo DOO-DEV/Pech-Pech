@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/doo-dev/pech-pech/internal/models"
 	"github.com/doo-dev/pech-pech/pkg/abstract"
@@ -32,6 +33,9 @@ func (a userRepository) GetUserByIdOrUsername(ctx context.Context, idOrUsername 
 	}
 
 	if err := a.pgDB.WithContext(ctx).Where(user).First(user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New(constants.ErrMsgNoRecord)
+		}
 		return nil, richerror.New(op).WithError(err).WithKind(richerror.KindNotFound)
 	}
 
