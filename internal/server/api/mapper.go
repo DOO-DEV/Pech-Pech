@@ -61,6 +61,12 @@ func (a Api) Start(c chan error) {
 			c <- richerror.New(op).WithError(err).WithKind(richerror.KindUnexpected).WithMessage(constants.ErrMsgStartHttp)
 		}
 	}()
+
+	go func() {
+		if err := a.Websocket(); err != nil {
+			c <- richerror.New(op).WithError(err).WithKind(richerror.KindUnexpected).WithMessage(constants.ErrMsgWsStart)
+		}
+	}()
 }
 
 func (a Api) Stop(ctx context.Context) error {
