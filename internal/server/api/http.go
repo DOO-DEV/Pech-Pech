@@ -7,6 +7,9 @@ import (
 	"github.com/doo-dev/pech-pech/internal/modules/auth/presenter"
 	authRepository "github.com/doo-dev/pech-pech/internal/modules/auth/repository"
 	authService "github.com/doo-dev/pech-pech/internal/modules/auth/usecase"
+	chatDelivery "github.com/doo-dev/pech-pech/internal/modules/chat/delivery"
+	"github.com/doo-dev/pech-pech/internal/modules/chat/hub"
+	chatRepository "github.com/doo-dev/pech-pech/internal/modules/chat/repository"
 	roomDelivery "github.com/doo-dev/pech-pech/internal/modules/rooms/delivery"
 	roomPresenter "github.com/doo-dev/pech-pech/internal/modules/rooms/presenter"
 	roomRepository "github.com/doo-dev/pech-pech/internal/modules/rooms/repository"
@@ -34,6 +37,13 @@ func (a Api) HttpApi() error {
 	roomSvc := roomService.NewRoomSvc(roomRepo)
 	roomValidator := roomPresenter.NewRoomValidator()
 	roomHandler := roomDelivery.NewRoomHandler(roomSvc, roomValidator)
+
+	// websocket initialization
+	chatRepo := chatRepository.NewChatRepository()
+	wsChatHub := hub.NewHub(chatRepo)
+	go wsChatHub.Broadcast()
+	chatHandler := chatDelivery.NewChatHandler(wsChatHub)
+	chatDelivery.SetRoutes(a.Echo, chatHandler, authMw)
 
 	p := a.Echo.Group("/api/v1")
 
