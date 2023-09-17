@@ -5,6 +5,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func SetRoutes(g *echo.Echo, h chatHandler, mw *middlewares.AuthMiddleware) {
-	g.GET("/ws", h.ChatConnect, mw.JwtValidate)
+func SetRoutes(g *echo.Group, h chatHandler, mw *middlewares.AuthMiddleware) {
+	g.GET("", h.ChatConnect, mw.JwtValidate)
 }

@@ -43,9 +43,11 @@ func (a Api) HttpApi() error {
 	wsChatHub := hub.NewHub(chatRepo)
 	go wsChatHub.Broadcast()
 	chatHandler := chatDelivery.NewChatHandler(wsChatHub)
-	chatDelivery.SetRoutes(a.Echo, chatHandler, authMw)
 
 	p := a.Echo.Group("/api/v1")
+
+	wsGroup := p.Group("/ws")
+	chatDelivery.SetRoutes(wsGroup, chatHandler, authMw)
 
 	authGroup := p.Group("/auth")
 	authDelivery.SetRoutes(authGroup, authHandler, authMw)
